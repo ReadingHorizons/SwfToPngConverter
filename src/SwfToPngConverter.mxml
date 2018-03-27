@@ -9,7 +9,24 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import mx.collections.ArrayList;
+			import mx.events.FileEvent;
 			import mx.events.FlexEvent;
+			
+			//--------------------------------------------------------------------------
+			//
+			//  Properties
+			//
+			//--------------------------------------------------------------------------
+			
+			//----------------------------------
+			//  Private:
+			//----------------------------------
+			
+			private var fileSystem:File;
+			[Bindable]
+			private var selectedFiles:ArrayList;
+			
 			//--------------------------------------------------------------------------
 			//
 			//  Methods
@@ -27,14 +44,108 @@
 			
 			private function _init():void
 			{
-				
+				createFileSystem();
 			}
+			
+			private function browseForSwfs():void
+			{
+				if(fileRadioBtn.selected)
+				{
+					fileSystem.browseForOpenMultiple("Select the swf file(s) that you want to convert.");
+				}
+				else
+				{
+					fileSystem.browseForDirectory("Select the folder that contains the swf files that you want to convert.");
+				}
+			}
+			
+			private function createFileSystem():void
+			{
+				fileSystem = new File();
+				fileSystem.addEventListener(Event.CANCEL, handleCancel, false, 0, true);
+				fileSystem.addEventListener(Event.SELECT, handleSelect, false, 0, true);
+				fileSystem.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple, false, 0, true);
+			}
+			
+			private function handleCancel(event:Event):void
+			{
+				//loadingLabel.visible = false;
+			}
+			
+			private function handleChange(event:Event):void
+			{
+				switch(event.currentTarget)
+				{
+					case fileRadioBtn:
+						urlTypeLabel.text = "File:";
+						break;
+					case directoryRadioBtn:
+						urlTypeLabel.text = "Directory:";
+						break;
+				}
+			}
+			
+			private function handleClick(event:MouseEvent):void
+			{
+				switch(event.currentTarget)
+				{
+					case browseSourceBtn:
+						browseForSwfs();
+						break;
+				}
+			}
+			
+			private function handleSelect(event:Event):void
+			{
+				if(fileSystem.isDirectory)
+				{
+					selectedFiles = new ArrayList(fileSystem.getDirectoryListing());
+				}
+				else
+				{
+					//loadingLabel.visible = false;
+				}
+			}
+			
+			private function handleSelectMultiple(event:FileListEvent):void
+			{
+				selectedFiles = new ArrayList(event.files);
+			}
+			
+			private function listLabel(value:Object):String
+			{
+				var label:String = value.nativePath;
+				
+				return label.substr(label.lastIndexOf("\\")+1);
+			}
+			
 		]]>
 	</fx:Script>
 	
-	<s:VGroup paddingBottom="12" paddingLeft="12" paddingRight="12" horizontalAlign="center" verticalAlign="top" width="100%" height="100%">
+	<s:VGroup paddingBottom="12" paddingLeft="12" paddingRight="12" horizontalAlign="left" verticalAlign="top" width="100%" height="100%">
 		<s:Label fontSize="32" text="Swf to Png Converter" paddingTop="12" textAlign="center" width="100%" />
-		
+		<s:Spacer height="20" />
+		<s:HGroup>
+			<s:Label fontSize="16" text="Input Type:" paddingTop="2" />
+			<s:Spacer width="4" />
+			<s:RadioButton id="fileRadioBtn" label="File" selected="true" change="handleChange(event)" />
+			<s:RadioButton id="directoryRadioBtn" label="Directory" change="handleChange(event)" />
+		</s:HGroup>
+		<s:Spacer height="2" />
+		<s:HGroup verticalAlign="middle" width="100%">
+			<s:Label id="urlTypeLabel" fontSize="16" text="File:" />
+			<s:TextInput id="sourceUrl" width="100%" editable="false" />
+			<s:Button id="browseSourceBtn" label="Browse" click="handleClick(event)" />
+		</s:HGroup>
+		<s:Spacer height="8" />
+		<s:Label fontSize="16" text="Files to convert:" />
+		<s:List id="fileList" dataProvider="{selectedFiles}" labelFunction="listLabel" width="100%" height="100%" />
+		<s:Spacer height="8" />
+		<s:HGroup verticalAlign="middle" width="100%">
+			<s:Label fontSize="16" text="Destination:" />
+			<s:TextInput id="destinationUrl" width="100%" editable="false" />
+			<s:Button id="browseDestinationBtn" label="Browse" click="handleClick(event)" />
+		</s:HGroup>
 	</s:VGroup>
 	
 </s:WindowedApplication>
