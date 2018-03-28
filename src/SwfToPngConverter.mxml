@@ -10,7 +10,6 @@
 	<fx:Script>
 		<![CDATA[
 			import mx.collections.ArrayList;
-			import mx.events.FileEvent;
 			import mx.events.FlexEvent;
 			
 			//--------------------------------------------------------------------------
