@@ -88,6 +88,7 @@
 			
 			private function exportPNGs():void
 			{
+				curConvertedCount = 0;
 				loaders = new Vector.<Loader>();
 				var curLoader:Loader;
 				var curSwfFile:String;
@@ -144,6 +145,7 @@
 						}
 						else
 						{
+							loadingLabel.visible = true;
 							exportPNGs();
 						}
 						break;
@@ -153,9 +155,19 @@
 			private function handleComplete(event:Event):void
 			{
 				var swf:MovieClip = event.currentTarget.content;
+				var multiplier:Number = 1;
+				if(adjustSizeCheckBox.selected)
+				{
+					if(scaleRadio.selected)
+					{
+						multiplier = Number(multiplierInput.text);
+						swf.scaleX = swf.scaleY = multiplier;
+					}
+				}
+				var scaleMatrix:Matrix = new Matrix(multiplier, 0, 0, multiplier);
 				var bmpData:BitmapData;
-				bmpData = new BitmapData(swf.loaderInfo.width, swf.loaderInfo.height, true, 0x00FFFFFF);
-				bmpData.draw(swf);
+				bmpData = new BitmapData(swf.loaderInfo.width*multiplier, swf.loaderInfo.height*multiplier, true, 0x00FFFFFF);
+				bmpData.draw(swf, scaleMatrix);
 				var filename:String = event.currentTarget.url;
 				var file:File = new File(destinationUrl.text+"\\"+filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+".png");
 				var encoder:PNGEncoder = new PNGEncoder();
@@ -166,11 +178,7 @@
 				curConvertedCount++;
 				if(curConvertedCount == selectedFiles.length)
 				{
-					trace("done");
-				}
-				else
-				{
-					trace("still converting");
+					loadingLabel.visible = false;
 				}
 			}
 			
@@ -262,7 +270,7 @@
 				}
 				if(filesWereRemoved)
 				{
-					Alert.show("File types other than .swf were encountered and removed.", "Info");
+					Alert.show("File types other than .swf were encountered and not included.", "Info");
 				}
 			}
 			
@@ -355,5 +363,9 @@
 		</s:HGroup>
 		<s:Spacer height="4" />
 	</s:VGroup>
+	
+	<s:BorderContainer id="loadingLabel" backgroundAlpha=".5" backgroundColor="#CCCCCC" borderAlpha=".5" borderColor="#CCCCCC" width="100%" height="100%" visible="false">
+		<s:Label text="Converting..." fontSize="36" horizontalCenter="0" verticalCenter="0" />
+	</s:BorderContainer>
 	
 </s:WindowedApplication>
