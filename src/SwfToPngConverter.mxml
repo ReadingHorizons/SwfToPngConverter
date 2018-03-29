@@ -9,8 +9,11 @@
 	
 	<fx:Script>
 		<![CDATA[
+			import mx.binding.utils.BindingUtils;
 			import mx.collections.ArrayList;
+			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
 			
 			//--------------------------------------------------------------------------
 			//
@@ -22,7 +25,13 @@
 			//  Private:
 			//----------------------------------
 			
-			private var fileSystem:File;
+			private const DEFAULT_TEXT_COLOR:uint = 0x000000;
+			private const DISABLED_TEXT_COLOR:uint = 0x999999;
+			
+			private var curConvertedCount:uint;
+			private var fileSystemExport:File;
+			private var fileSystemImport:File;
+			private var loaders:Vector.<Loader>;
 			[Bindable]
 			private var selectedFiles:ArrayList;
 			
@@ -43,43 +52,77 @@
 			
 			private function _init():void
 			{
-				createFileSystem();
+				curConvertedCount = 0;
+				
+				createFileSystems();
+			}
+			
+			private function browseForDestination():void
+			{
+				fileSystemExport.browseForDirectory("Select the folder where you would like to export the png files.");
 			}
 			
 			private function browseForSwfs():void
 			{
 				if(fileRadioBtn.selected)
 				{
-					fileSystem.browseForOpenMultiple("Select the swf file(s) that you want to convert.");
+					fileSystemImport.browseForOpenMultiple("Select the swf file(s) that you want to convert.");
 				}
 				else
 				{
-					fileSystem.browseForDirectory("Select the folder that contains the swf files that you want to convert.");
+					fileSystemImport.browseForDirectory("Select the folder that contains the swf files that you want to convert.");
 				}
 			}
 			
-			private function createFileSystem():void
+			private function createFileSystems():void
 			{
-				fileSystem = new File();
-				fileSystem.addEventListener(Event.CANCEL, handleCancel, false, 0, true);
-				fileSystem.addEventListener(Event.SELECT, handleSelect, false, 0, true);
-				fileSystem.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple, false, 0, true);
+				fileSystemExport = new File();
+				fileSystemExport.addEventListener(Event.CANCEL, handleCancel, false, 0, true);
+				fileSystemExport.addEventListener(Event.SELECT, handleSelect, false, 0, true);
+				
+				fileSystemImport = new File();
+				fileSystemImport.addEventListener(Event.CANCEL, handleCancel, false, 0, true);
+				fileSystemImport.addEventListener(Event.SELECT, handleSelect, false, 0, true);
+				fileSystemImport.addEventListener(FileListEvent.SELECT_MULTIPLE, handleSelectMultiple, false, 0, true);
+			}
+			
+			private function exportPNGs():void
+			{
+				loaders = new Vector.<Loader>();
+				var curLoader:Loader;
+				var curSwfFile:String;
+				var len:uint = selectedFiles.length;
+				for(var i:int=0; i<len; i++) 
+				{
+					curSwfFile = selectedFiles.source[i].nativePath;
+					curLoader = new Loader();
+					loaders.push(curLoader);
+					curLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, handleComplete);
+					curLoader.load(new URLRequest(curSwfFile));
+				}
 			}
 			
 			private function handleCancel(event:Event):void
 			{
 				//loadingLabel.visible = false;
+				if(selectedFiles == null || selectedFiles.length == 0)
+				{
+					exportBtn.enabled = false;
+				}
 			}
 			
 			private function handleChange(event:Event):void
 			{
 				switch(event.currentTarget)
 				{
-					case fileRadioBtn:
-						urlTypeLabel.text = "File:";
+					case adjustSizeCheckBox:
+						handleSizeCheckBoxChange(event);
 						break;
-					case directoryRadioBtn:
-						urlTypeLabel.text = "Directory:";
+					case scaleRadio:
+						scaleRadioSelected();
+						break;
+					case resizeRadio:
+						resizeRadioSelected();
 						break;
 				}
 			}
@@ -91,24 +134,77 @@
 					case browseSourceBtn:
 						browseForSwfs();
 						break;
+					case browseDestinationBtn:
+						browseForDestination();
+						break;
+					case exportBtn:
+						if(destinationUrl.text == "")
+						{
+							Alert.show("Please select a destination to export the files.", "Warning");
+						}
+						else
+						{
+							exportPNGs();
+						}
+						break;
+				}
+			}
+			
+			private function handleComplete(event:Event):void
+			{
+				var swf:MovieClip = event.currentTarget.content;
+				var bmpData:BitmapData;
+				bmpData = new BitmapData(swf.loaderInfo.width, swf.loaderInfo.height, true, 0x00FFFFFF);
+				bmpData.draw(swf);
+				var filename:String = event.currentTarget.url;
+				var file:File = new File(destinationUrl.text+"\\"+filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+".png");
+				var encoder:PNGEncoder = new PNGEncoder();
+				var fileStream:FileStream = new FileStream();
+				fileStream.openAsync(file, FileMode.WRITE);
+				fileStream.writeBytes(encoder.encode(bmpData));
+				fileStream.close();
+				curConvertedCount++;
+				if(curConvertedCount == selectedFiles.length)
+				{
+					trace("done");
+				}
+				else
+				{
+					trace("still converting");
 				}
 			}
 			
 			private function handleSelect(event:Event):void
 			{
-				if(fileSystem.isDirectory)
+				switch(event.currentTarget)
 				{
-					selectedFiles = new ArrayList(fileSystem.getDirectoryListing());
-				}
-				else
-				{
-					//loadingLabel.visible = false;
+					case fileSystemImport:
+						if(fileSystemImport.isDirectory)
+						{
+							selectedFiles = new ArrayList(fileSystemImport.getDirectoryListing());
+							removeNonSwfFiles();
+							exportBtn.enabled = true;
+							var destination:String = selectedFiles.getItemAt(0).nativePath
+							destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
+						}
+						else
+						{
+							//loadingLabel.visible = false;
+						}
+						break;
+					case fileSystemExport:
+						destinationUrl.text = event.currentTarget.nativePath;
+						break;
 				}
 			}
 			
 			private function handleSelectMultiple(event:FileListEvent):void
 			{
 				selectedFiles = new ArrayList(event.files);
+				removeNonSwfFiles();
+				exportBtn.enabled = true;
+				var destination:String = selectedFiles.getItemAt(0).nativePath
+				destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
 			}
 			
 			private function listLabel(value:Object):String
@@ -118,33 +214,146 @@
 				return label.substr(label.lastIndexOf("\\")+1);
 			}
 			
+			private function handleSizeCheckBoxChange(event:Event):void
+			{
+				if(event.currentTarget.selected)
+				{
+					scaleRadio.enabled = true;
+					multiplierInput.enabled = true;
+					resizeRadio.enabled = true;
+					if(scaleRadio.selected)
+					{
+						scaleRadioSelected();
+					}
+					else
+					{
+						resizeRadioSelected();
+					}
+				}
+				else
+				{
+					scaleRadio.enabled = false;
+					multiplierInput.enabled = false;
+					resizeRadio.enabled = false;
+					desiredWidthInput.enabled = false;
+					desiredHeightInput.enabled = false;
+					constrainCheckBox.enabled = false;
+					multiplierLabel.setStyle("color", DISABLED_TEXT_COLOR);
+					desiredWidthLabel.setStyle("color", DISABLED_TEXT_COLOR);
+					desiredHeightLabel.setStyle("color", DISABLED_TEXT_COLOR);
+				}
+			}
+			
+			private function removeNonSwfFiles():void
+			{
+				var curExtension:String;
+				var curFile:String;
+				var filesWereRemoved:Boolean = false;
+				var len:uint = selectedFiles.source.length;
+				for(var i:int=len-1; i>=0; i--) 
+				{
+					curFile = selectedFiles.source[i].nativePath;
+					curExtension = curFile.substr(curFile.lastIndexOf(".")+1);
+					if(curExtension != "swf")
+					{
+						selectedFiles.removeItemAt(i);
+						filesWereRemoved = true;
+					}
+				}
+				if(filesWereRemoved)
+				{
+					Alert.show("File types other than .swf were encountered and removed.", "Info");
+				}
+			}
+			
+			private function resizeRadioSelected():void
+			{
+				desiredWidthInput.enabled = true;
+				desiredWidthLabel.setStyle("color", DEFAULT_TEXT_COLOR);
+				desiredHeightInput.enabled = true;
+				desiredHeightLabel.setStyle("color", DEFAULT_TEXT_COLOR);
+				constrainCheckBox.enabled = true;
+				multiplierInput.text = "";
+				multiplierInput.enabled = false;
+				multiplierLabel.setStyle("color", DISABLED_TEXT_COLOR);
+			}
+			
+			private function scaleRadioSelected():void
+			{
+				multiplierInput.enabled = true;
+				multiplierLabel.setStyle("color", DEFAULT_TEXT_COLOR);
+				desiredWidthInput.text = "";
+				desiredWidthInput.enabled = false;
+				desiredWidthLabel.setStyle("color", DISABLED_TEXT_COLOR);
+				desiredHeightInput.text = "";
+				desiredHeightInput.enabled = false;
+				desiredHeightLabel.setStyle("color", DISABLED_TEXT_COLOR);
+				constrainCheckBox.enabled = false;
+			}
+			
 		]]>
 	</fx:Script>
 	
 	<s:VGroup paddingBottom="12" paddingLeft="12" paddingRight="12" horizontalAlign="left" verticalAlign="top" width="100%" height="100%">
 		<s:Label fontSize="32" text="Swf to Png Converter" paddingTop="12" textAlign="center" width="100%" />
 		<s:Spacer height="20" />
-		<s:HGroup>
-			<s:Label fontSize="16" text="Input Type:" paddingTop="2" />
+		<s:HGroup paddingRight="6" verticalAlign="middle" width="50%">
+			<s:Label fontSize="16" text="Input Type:" paddingTop="3" />
 			<s:Spacer width="4" />
-			<s:RadioButton id="fileRadioBtn" label="File" selected="true" change="handleChange(event)" />
-			<s:RadioButton id="directoryRadioBtn" label="Directory" change="handleChange(event)" />
-		</s:HGroup>
-		<s:Spacer height="2" />
-		<s:HGroup verticalAlign="middle" width="100%">
-			<s:Label id="urlTypeLabel" fontSize="16" text="File:" />
-			<s:TextInput id="sourceUrl" width="100%" editable="false" />
+			<s:RadioButton id="fileRadioBtn" groupName="browseType" fontSize="14" label="File" selected="true" change="handleChange(event)" />
+			<s:RadioButton id="directoryRadioBtn" groupName="browseType" fontSize="14" label="Directory" change="handleChange(event)" />
+			<s:Spacer width="100%" />
 			<s:Button id="browseSourceBtn" label="Browse" click="handleClick(event)" />
 		</s:HGroup>
-		<s:Spacer height="8" />
-		<s:Label fontSize="16" text="Files to convert:" />
-		<s:List id="fileList" dataProvider="{selectedFiles}" labelFunction="listLabel" width="100%" height="100%" />
+		<s:Spacer height="2" />
+		<s:HGroup width="100%" height="100%">
+			<s:VGroup width="50%" height="100%">
+				<s:Label fontSize="16" text="Files to convert:" />
+				<s:List id="fileList" dataProvider="{selectedFiles}" labelFunction="listLabel" width="100%" height="100%" />
+			</s:VGroup>
+			<s:Spacer width="2%" />
+			<s:VGroup width="48%" height="100%">
+				<s:Label fontSize="16" text="Output Options:" />
+				<s:BorderContainer width="100%" height="100%">
+					<s:VGroup gap="10" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
+						<s:CheckBox id="adjustSizeCheckBox" fontSize="14" label="Adjust Output Size" change="handleChange(event)" />
+						<s:HGroup paddingLeft="20">
+							<s:RadioButton id="scaleRadio" groupName="outputSize" enabled="false" fontSize="14" label="Scale" selected="true" change="handleChange(event)" />
+						</s:HGroup>
+						<s:HGroup paddingLeft="40" verticalAlign="middle">
+							<s:Label id="multiplierLabel" color="#999999" fontSize="14" paddingTop="2" text="Multiplier:" width="100" />
+							<s:TextInput id="multiplierInput" enabled="false" width="50" />
+						</s:HGroup>
+						<s:Spacer height="12" />
+						<s:HGroup paddingLeft="20">
+							<s:RadioButton id="resizeRadio" groupName="outputSize" enabled="false" fontSize="14" label="Resize" change="handleChange(event)" />
+						</s:HGroup>
+						<s:HGroup paddingLeft="40" verticalAlign="middle">
+							<s:Label id="desiredWidthLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Width:" width="100" />
+							<s:TextInput id="desiredWidthInput" enabled="false" width="50" />
+						</s:HGroup>
+						<s:HGroup paddingLeft="40" verticalAlign="middle">
+							<s:Label id="desiredHeightLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Height:" width="100" />
+							<s:TextInput id="desiredHeightInput" enabled="false" width="50" />
+						</s:HGroup>
+						<s:HGroup paddingLeft="40" verticalAlign="middle">
+							<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" />
+						</s:HGroup>
+					</s:VGroup>
+				</s:BorderContainer>
+			</s:VGroup>
+		</s:HGroup>
 		<s:Spacer height="8" />
 		<s:HGroup verticalAlign="middle" width="100%">
-			<s:Label fontSize="16" text="Destination:" />
+			<s:Label fontSize="16" text="Export Destination:" />
 			<s:TextInput id="destinationUrl" width="100%" editable="false" />
 			<s:Button id="browseDestinationBtn" label="Browse" click="handleClick(event)" />
 		</s:HGroup>
+		<s:Spacer height="8" />
+		<s:HGroup verticalAlign="middle" horizontalAlign="center" width="100%">
+			<s:Button id="exportBtn" label="Convert and Export" enabled="false" click="handleClick(event)" />
+		</s:HGroup>
+		<s:Spacer height="4" />
 	</s:VGroup>
 	
 </s:WindowedApplication>
