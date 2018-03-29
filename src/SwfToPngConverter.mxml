@@ -54,8 +54,9 @@
 			
 			private function _init():void
 			{
+				var appXML:XML = NativeApplication.nativeApplication.applicationDescriptor;
+				versionLabel.text = "v "+appXML.elements("*")[3].toString();
 				curConvertedCount = 0;
-				
 				createFileSystems();
 			}
 			
@@ -380,6 +381,7 @@
 			<s:Button id="exportBtn" label="Convert and Export" enabled="false" click="handleClick(event)" />
 		</s:HGroup>
 		<s:Spacer height="4" />
+		<s:Label id="versionLabel" color="#777777" textAlign="right" width="100%" />
 	</s:VGroup>
 	
 	<s:BorderContainer id="loadingLabel" backgroundAlpha=".5" backgroundColor="#CCCCCC" borderAlpha=".5" borderColor="#CCCCCC" width="100%" height="100%" visible="false">
