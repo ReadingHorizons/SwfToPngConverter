@@ -15,6 +15,8 @@
 			import mx.events.FlexEvent;
 			import mx.graphics.codec.PNGEncoder;
 			
+			import spark.events.TextOperationEvent;
+			
 			//--------------------------------------------------------------------------
 			//
 			//  Properties
@@ -125,6 +127,9 @@
 					case resizeRadio:
 						resizeRadioSelected();
 						break;
+					case endOfFilenameInput:
+						handleEndOfFilenameChange(event);
+						break;
 				}
 			}
 			
@@ -169,7 +174,7 @@
 				bmpData = new BitmapData(swf.loaderInfo.width*multiplier, swf.loaderInfo.height*multiplier, true, 0x00FFFFFF);
 				bmpData.draw(swf, scaleMatrix);
 				var filename:String = event.currentTarget.url;
-				var file:File = new File(destinationUrl.text+"\\"+filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+".png");
+				var file:File = new File(destinationUrl.text+"\\"+filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+endOfFilenameInput.text+".png");
 				var encoder:PNGEncoder = new PNGEncoder();
 				var fileStream:FileStream = new FileStream();
 				fileStream.openAsync(file, FileMode.WRITE);
@@ -180,6 +185,11 @@
 				{
 					loadingLabel.visible = false;
 				}
+			}
+			
+			private function handleEndOfFilenameChange(event:Event):void
+			{
+				sampleEndOfFilename.text = "sample"+endOfFilenameInput.text+".png";
 			}
 			
 			private function handleSelect(event:Event):void
@@ -346,6 +356,14 @@
 						</s:HGroup>
 						<s:HGroup paddingLeft="40" verticalAlign="middle">
 							<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" />
+						</s:HGroup>
+						<s:HGroup verticalAlign="middle">
+							<s:Label fontSize="14" paddingTop="2" text="Add to end of Filename:" width="156" />
+							<s:TextInput id="endOfFilenameInput" width="100" change="handleChange(event)" />
+						</s:HGroup>
+						<s:HGroup paddingLeft="20" verticalAlign="top">
+							<s:Label color="#222222" fontSize="14" text="Example: " />
+							<s:Label id="sampleEndOfFilename" color="#555555" fontStyle="italic" fontSize="14" text="sample.png" width="100%" />
 						</s:HGroup>
 					</s:VGroup>
 				</s:BorderContainer>
