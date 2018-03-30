@@ -203,8 +203,11 @@
 							selectedFiles = new ArrayList(fileSystemImport.getDirectoryListing());
 							removeNonSwfFiles();
 							exportBtn.enabled = true;
-							var destination:String = selectedFiles.getItemAt(0).nativePath
-							destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
+							if(selectedFiles.length > 0)
+							{
+								var destination:String = selectedFiles.getItemAt(0).nativePath
+								destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
+							}
 						}
 						else
 						{

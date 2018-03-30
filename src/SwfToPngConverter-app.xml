@@ -4,8 +4,8 @@
 	<id>swf.to.png.converter</id>
 	<filename>swftopngconverter</filename>
 	<name>Swf To Png Converter</name>
-	<versionNumber>1.0.2</versionNumber>
-	<versionLabel>1.0.2</versionLabel>
+	<versionNumber>1.0.3</versionNumber>
+	<versionLabel>1.0.3</versionLabel>
 	<description>Loads swf files and converts them into png files</description>
 	<!-- <copyright></copyright> -->
 
