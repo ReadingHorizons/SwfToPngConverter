@@ -233,13 +233,6 @@
 				destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
 			}
 			
-			private function listLabel(value:Object):String
-			{
-				var label:String = value.nativePath;
-				
-				return label.substr(label.lastIndexOf("\\")+1);
-			}
-			
 			private function handleSizeCheckBoxChange(event:Event):void
 			{
 				if(event.currentTarget.selected)
@@ -268,6 +261,13 @@
 					desiredWidthLabel.setStyle("color", DISABLED_TEXT_COLOR);
 					desiredHeightLabel.setStyle("color", DISABLED_TEXT_COLOR);
 				}
+			}
+			
+			private function listLabel(value:Object):String
+			{
+				var label:String = value.nativePath;
+				
+				return label.substr(label.lastIndexOf("\\")+1);
 			}
 			
 			private function removeNonSwfFiles():void
