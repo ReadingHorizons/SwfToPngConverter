@@ -93,16 +93,18 @@
 			{
 				curConvertedCount = 0;
 				loaders = new Vector.<Loader>();
+				var curFile:File;
 				var curLoader:Loader;
 				var curSwfFile:String;
 				var len:uint = selectedFiles.length;
 				for(var i:int=0; i<len; i++) 
 				{
 					curSwfFile = selectedFiles.source[i].nativePath;
+					curFile = new File().resolvePath(curSwfFile);
 					curLoader = new Loader();
 					loaders.push(curLoader);
 					curLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, handleComplete);
-					curLoader.load(new URLRequest(curSwfFile));
+					curLoader.load(new URLRequest(curFile.url));
 				}
 			}
 			
@@ -175,7 +177,9 @@
 				bmpData = new BitmapData(swf.loaderInfo.width*multiplier, swf.loaderInfo.height*multiplier, true, 0x00FFFFFF);
 				bmpData.draw(swf, scaleMatrix);
 				var filename:String = event.currentTarget.url;
-				var file:File = new File(destinationUrl.text+"\\"+filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+endOfFilenameInput.text+".png");
+				filename = filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+endOfFilenameInput.text+".png";
+				var file:File;
+				file = new File(destinationUrl.text+"/"+filename);
 				var encoder:PNGEncoder = new PNGEncoder();
 				var fileStream:FileStream = new FileStream();
 				fileStream.openAsync(file, FileMode.WRITE);
