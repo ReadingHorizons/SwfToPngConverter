@@ -168,7 +168,22 @@
 				{
 					if(scaleRadio.selected)
 					{
-						multiplier = Number(multiplierInput.text);
+						var scale:Number = Number(multiplierInput.text)
+						if(isNaN(scale))
+						{
+							multiplier = 1;
+						}
+						else
+						{
+							if(scale > 0)
+							{
+								multiplier = scale;
+							}
+							else
+							{
+								multiplier = 1;
+							}
+						}
 						swf.scaleX = swf.scaleY = multiplier;
 					}
 				}
@@ -348,7 +363,7 @@
 						</s:HGroup>
 						<s:HGroup paddingLeft="40" verticalAlign="middle">
 							<s:Label id="multiplierLabel" color="#999999" fontSize="14" paddingTop="2" text="Multiplier:" width="100" />
-							<s:TextInput id="multiplierInput" enabled="false" width="50" />
+							<s:TextInput id="multiplierInput" enabled="false" text="1" width="50" />
 						</s:HGroup>
 						<s:Spacer height="12" />
 						<s:HGroup paddingLeft="20">
