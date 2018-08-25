@@ -165,6 +165,7 @@
 				var bmpData:BitmapData;
 				var swf:MovieClip = event.currentTarget.content;
 				var multiplier:Number = 1;
+				var scaleMatrix:Matrix;
 				
 				if(adjustSizeCheckBox.selected)
 				{
@@ -187,14 +188,17 @@
 							}
 						}
 						swf.scaleX = swf.scaleY = multiplier;
-						var scaleMatrix:Matrix = new Matrix(multiplier, 0, 0, multiplier);
+						desiredWidthInput.text = swf.width.toString();
+						desiredHeightInput.text = swf.height.toString();
+						scaleMatrix = new Matrix(multiplier, 0, 0, multiplier);
 						bmpData = new BitmapData(swf.loaderInfo.width*multiplier, swf.loaderInfo.height*multiplier, true, 0x00FFFFFF);
-						bmpData.draw(swf, scaleMatrix);
 					}
 					else if(resizeRadio.selected)
 					{
-						var desiredWidth:Number;
-						var desiredHeight:Number;
+						var desiredWidth:Number = 0;
+						var desiredHeight:Number = 0;
+						var heightMultiplier:Number = 1;
+						var widthMultiplier:Number = 1;
 						
 						if(constrainCheckBox.selected)
 						{
@@ -202,7 +206,7 @@
 							
 							if(desiredHeightInput.text != "")
 							{
-								desiredHeight = Number(desiredWidthInput.text);
+								desiredHeight = Number(desiredHeightInput.text);
 								desiredWidth = desiredHeight * ratio;
 							}
 							else if(desiredWidthLabel.text != "")
@@ -214,11 +218,21 @@
 						else
 						{
 							desiredWidth = Number(desiredWidthInput.text);
-							desiredHeight = Number(desiredWidthInput.text);
+							desiredHeight = Number(desiredHeightInput.text);
 						}
-						bmpData = new BitmapData(desiredWidth, desiredHeight, true, 0x00FFFFFF);
-						bmpData.draw(swf);
+						
+						widthMultiplier = desiredWidth / swf.width;
+						heightMultiplier = desiredHeight / swf.height;
+						swf.scaleX = widthMultiplier;
+						swf.scaleY = heightMultiplier;
+						if(constrainCheckBox.selected)
+						{
+							multiplierInput.text = widthMultiplier.toPrecision(4);
+						}
+						scaleMatrix = new Matrix(widthMultiplier, 0, 0, heightMultiplier);
+						bmpData = new BitmapData(swf.loaderInfo.width*widthMultiplier, swf.loaderInfo.height*heightMultiplier, true, 0x00FFFFFF);
 					}
+					bmpData.draw(swf, scaleMatrix);
 				}
 				
 				var filename:String = event.currentTarget.url;
