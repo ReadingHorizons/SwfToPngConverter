@@ -57,6 +57,7 @@
 				var appXML:XML = NativeApplication.nativeApplication.applicationDescriptor;
 				versionLabel.text = "v "+appXML.elements("*")[3].toString();
 				curConvertedCount = 0;
+				fileList.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, handleNativeDragEnter);
 				createFileSystems();
 			}
 			
@@ -234,6 +235,11 @@
 					}
 					bmpData.draw(swf, scaleMatrix);
 				}
+				else
+				{
+					bmpData = new BitmapData(swf.loaderInfo.width, swf.loaderInfo.height, true, 0x00FFFFFF);
+					bmpData.draw(swf);
+				}
 				
 				var filename:String = event.currentTarget.url;
 				filename = filename.substring(filename.lastIndexOf("/")+1, filename.lastIndexOf("."))+endOfFilenameInput.text+".png";
@@ -270,6 +276,50 @@
 					}
 				}
 					
+			}
+			
+			private function handleNativeDragComplete(event:NativeDragEvent):void
+			{
+				//trace("Complete");
+			}
+			
+			private function handleNativeDragDrop(event:NativeDragEvent):void
+			{
+				//trace("Drop");
+				fileList.removeEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
+				var files:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				selectedFiles = new ArrayList(files);
+				removeNonSwfFiles();
+				exportBtn.enabled = true;
+				if(selectedFiles.length > 0)
+				{
+					var destination:String = selectedFiles.getItemAt(0).nativePath
+					destinationUrl.text = destination.substring(0, destination.lastIndexOf("\\"));
+				}
+			}
+			
+			private function handleNativeDragEnter(event:NativeDragEvent):void
+			{
+				if(!fileList.hasEventListener(NativeDragEvent.NATIVE_DRAG_DROP))
+				{
+					//trace("Enter");
+					NativeDragManager.acceptDragDrop(fileList);
+					fileList.addEventListener(NativeDragEvent.NATIVE_DRAG_COMPLETE, handleNativeDragComplete);
+					fileList.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
+					fileList.addEventListener(NativeDragEvent.NATIVE_DRAG_EXIT, handleNativeDragExit);
+					fileList.addEventListener(NativeDragEvent.NATIVE_DRAG_OVER, handleNativeDragOver);
+				}
+			}
+			
+			private function handleNativeDragExit(event:NativeDragEvent):void
+			{
+				//trace("Exit");
+			}
+			
+			private function handleNativeDragOver(event:NativeDragEvent):void
+			{
+				//trace("Over");
+				NativeDragManager.acceptDragDrop(fileList);
 			}
 			
 			private function handleSelect(event:Event):void
