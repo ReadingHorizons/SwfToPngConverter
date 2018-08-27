@@ -13,6 +13,7 @@
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
+			import mx.flash.UIMovieClip;
 			import mx.graphics.codec.PNGEncoder;
 			
 			import spark.events.TextOperationEvent;
@@ -34,8 +35,11 @@
 			private var fileSystemExport:File;
 			private var fileSystemImport:File;
 			private var loaders:Vector.<Loader>;
+			private var previewSwf:MovieClip;
 			[Bindable]
 			private var selectedFiles:ArrayList;
+			private var swfMovieClip:UIMovieClip;
+			private var swfPreviewLoader:Loader;
 			
 			//--------------------------------------------------------------------------
 			//
@@ -157,6 +161,10 @@
 							loadingLabel.visible = true;
 							exportPNGs();
 						}
+						break;
+					case fileList:
+						removePreviewSwf();
+						loadSwf(fileList.selectedItem.url);
 						break;
 				}
 			}
@@ -288,7 +296,9 @@
 				//trace("Drop");
 				fileList.removeEventListener(NativeDragEvent.NATIVE_DRAG_DROP, handleNativeDragDrop);
 				var files:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
+				files.sortOn("url");
 				selectedFiles = new ArrayList(files);
+				removePreviewSwf();
 				removeNonSwfFiles();
 				exportBtn.enabled = true;
 				if(selectedFiles.length > 0)
@@ -330,6 +340,7 @@
 						if(fileSystemImport.isDirectory)
 						{
 							selectedFiles = new ArrayList(fileSystemImport.getDirectoryListing());
+							removePreviewSwf();
 							removeNonSwfFiles();
 							exportBtn.enabled = true;
 							if(selectedFiles.length > 0)
@@ -351,7 +362,10 @@
 			
 			private function handleSelectMultiple(event:FileListEvent):void
 			{
-				selectedFiles = new ArrayList(event.files);
+				var files:Array = event.files;
+				files.sortOn("url");
+				selectedFiles = new ArrayList(files);
+				removePreviewSwf();
 				removeNonSwfFiles();
 				exportBtn.enabled = true;
 				var destination:String = selectedFiles.getItemAt(0).nativePath
@@ -388,11 +402,50 @@
 				}
 			}
 			
+			private function handleSwfPreviewLoadComplete(event:Event):void
+			{
+				swfPreviewLoader.contentLoaderInfo.removeEventListener(Event.COMPLETE, handleSwfPreviewLoadComplete);
+				
+				previewSwf = event.currentTarget.content;
+				
+				var swfOriginalHeight:Number = previewSwf.height;
+				var swfPadding:Number = 16;
+				var targetScale:Number = 1;
+				var targetSize:Number = swfContainer.width-swfPadding;
+				
+				if(previewSwf.width > targetSize)
+				{
+					targetScale = targetSize/previewSwf.width;
+					previewSwf.scaleX = previewSwf.scaleY = targetScale;
+				}
+				
+				targetSize = swfContainer.height-swfPadding;
+				if(previewSwf.height > targetSize)
+				{
+					targetScale = targetSize/swfOriginalHeight;
+					previewSwf.scaleX = previewSwf.scaleY = targetScale;
+				}
+				
+				previewSwf.x = (swfContainer.width-previewSwf.width)/2;
+				previewSwf.y = (swfContainer.height-previewSwf.height)/2;
+				
+				swfMovieClip = new UIMovieClip();
+				swfMovieClip.addChild(previewSwf);
+				swfContainer.addElement(swfMovieClip);
+			}
+			
 			private function listLabel(value:Object):String
 			{
 				var label:String = value.nativePath;
 				
 				return label.substr(label.lastIndexOf("\\")+1);
+			}
+			
+			private function loadSwf(swfFile:String):void
+			{
+				swfPreviewLoader = new Loader();
+				swfPreviewLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, handleSwfPreviewLoadComplete);
+				swfPreviewLoader.load(new URLRequest(swfFile));
 			}
 			
 			private function removeNonSwfFiles():void
@@ -415,6 +468,11 @@
 				{
 					Alert.show("File types other than .swf were encountered and not included.", "Info");
 				}
+			}
+			
+			private function removePreviewSwf():void
+			{
+				swfContainer.removeAllElements();
 			}
 			
 			private function resizeRadioSelected():void
@@ -460,12 +518,18 @@
 		<s:HGroup width="100%" height="100%">
 			<s:VGroup width="50%" height="100%">
 				<s:Label fontSize="16" text="Files to convert:" />
-				<s:List id="fileList" dataProvider="{selectedFiles}" labelFunction="listLabel" width="100%" height="100%" />
+				<s:List id="fileList" dataProvider="{selectedFiles}" labelFunction="listLabel" width="100%" height="100%" click="handleClick(event)" />
 			</s:VGroup>
 			<s:Spacer width="2%" />
 			<s:VGroup width="48%" height="100%">
+				<s:Label fontSize="16" text="Swf Preview:" />
+				<s:BorderContainer width="100%" height="38%">
+					<s:Scroller id="swfScrollPane"  width="100%" height="100%">
+						<s:Group id="swfContainer" width="100%" height="100%"></s:Group>
+					</s:Scroller>
+				</s:BorderContainer>
 				<s:Label fontSize="16" text="Output Options:" />
-				<s:BorderContainer width="100%" height="100%">
+				<s:BorderContainer width="100%" height="62%">
 					<s:VGroup gap="10" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
 						<s:CheckBox id="adjustSizeCheckBox" fontSize="14" label="Adjust Output Size" change="handleChange(event)" />
 						<s:HGroup paddingLeft="20">
