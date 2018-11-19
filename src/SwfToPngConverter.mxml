@@ -164,7 +164,10 @@
 						break;
 					case fileList:
 						removePreviewSwf();
-						loadSwf(fileList.selectedItem.url);
+						if(fileList.selectedItem)
+						{
+							loadSwf(fileList.selectedItem.url);
+						}
 						break;
 				}
 			}
@@ -200,7 +203,7 @@
 						desiredWidthInput.text = swf.width.toString();
 						desiredHeightInput.text = swf.height.toString();
 						scaleMatrix = new Matrix(multiplier, 0, 0, multiplier);
-						bmpData = new BitmapData(swf.loaderInfo.width*multiplier, swf.loaderInfo.height*multiplier, true, 0x00FFFFFF);
+						bmpData = new BitmapData((swf.loaderInfo.width+2)*multiplier, (swf.loaderInfo.height+2)*multiplier, true, 0x00FFFFFF);
 					}
 					else if(resizeRadio.selected)
 					{
@@ -230,8 +233,8 @@
 							desiredHeight = Number(desiredHeightInput.text);
 						}
 						
-						widthMultiplier = desiredWidth / swf.width;
-						heightMultiplier = desiredHeight / swf.height;
+						widthMultiplier = desiredWidth / (swf.width+20);
+						heightMultiplier = desiredHeight / (swf.height+20);
 						swf.scaleX = widthMultiplier;
 						swf.scaleY = heightMultiplier;
 						if(constrainCheckBox.selected)
@@ -239,13 +242,13 @@
 							multiplierInput.text = widthMultiplier.toPrecision(4);
 						}
 						scaleMatrix = new Matrix(widthMultiplier, 0, 0, heightMultiplier);
-						bmpData = new BitmapData(swf.loaderInfo.width*widthMultiplier, swf.loaderInfo.height*heightMultiplier, true, 0x00FFFFFF);
+						bmpData = new BitmapData((swf.loaderInfo.width+2)*widthMultiplier, (swf.loaderInfo.height+2)*heightMultiplier, true, 0x00FFFFFF);
 					}
 					bmpData.draw(swf, scaleMatrix);
 				}
 				else
 				{
-					bmpData = new BitmapData(swf.loaderInfo.width, swf.loaderInfo.height, true, 0x00FFFFFF);
+					bmpData = new BitmapData(swf.loaderInfo.width+2, swf.loaderInfo.height+2, true, 0x00FFFFFF);
 					bmpData.draw(swf);
 				}
 				
