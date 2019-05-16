@@ -9,7 +9,6 @@
 	
 	<fx:Script>
 		<![CDATA[
-			import mx.binding.utils.BindingUtils;
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
@@ -113,6 +112,11 @@
 				}
 			}
 			
+			private function handleAlertClose(event:Event):void
+			{
+				loadingLabel.visible = false;
+			}
+			
 			private function handleCancel(event:Event):void
 			{
 				//loadingLabel.visible = false;
@@ -128,6 +132,10 @@
 				{
 					case adjustSizeCheckBox:
 						handleSizeCheckBoxChange(event);
+						break;
+					case constrainCheckBox:
+						desiredHeightInput.text = "";
+						desiredWidthInput.text = "";
 						break;
 					case scaleRadio:
 						scaleRadioSelected();
@@ -214,35 +222,47 @@
 						
 						if(constrainCheckBox.selected)
 						{
-							var ratio:Number = Math.min(swf.width, swf.height) / Math.max(swf.width, swf.height);
+							var ratio:Number = 1;
+							var desiredMultiplier:Number = 1;
 							
 							if(desiredHeightInput.text != "")
 							{
+								ratio = swf.height / swf.width;
 								desiredHeight = Number(desiredHeightInput.text);
 								desiredWidth = desiredHeight * ratio;
+								desiredMultiplier = desiredHeight / swf.height;
 							}
-							else if(desiredWidthLabel.text != "")
+							else if(desiredWidthInput.text != "")
 							{
+								ratio = swf.width / swf.height;
 								desiredWidth = Number(desiredWidthInput.text);
 								desiredHeight = desiredWidth * ratio;
+								desiredMultiplier = desiredWidth / swf.width;
 							}
+							else if(desiredHeightInput.text == "" && desiredWidthInput.text == "")
+							{
+								Alert.show("Please input a numerical value for either the width or height.", "Warning", 4, null, handleAlertClose);
+								return;
+							}
+							widthMultiplier = desiredWidth / swf.width;
+							heightMultiplier = desiredHeight / swf.height;
+							swf.scaleX = swf.scaleY = desiredMultiplier;
+							multiplierInput.text = desiredMultiplier.toPrecision(4);
+							scaleMatrix = new Matrix(desiredMultiplier, 0, 0, desiredMultiplier);
+							bmpData = new BitmapData((swf.loaderInfo.width+2)*desiredMultiplier, (swf.loaderInfo.height+2)*desiredMultiplier, true, 0x00FFFFFF);
 						}
 						else
 						{
 							desiredWidth = Number(desiredWidthInput.text);
 							desiredHeight = Number(desiredHeightInput.text);
-						}
-						
-						widthMultiplier = desiredWidth / (swf.width+20);
-						heightMultiplier = desiredHeight / (swf.height+20);
-						swf.scaleX = widthMultiplier;
-						swf.scaleY = heightMultiplier;
-						if(constrainCheckBox.selected)
-						{
+							widthMultiplier = desiredWidth / swf.width;
+							heightMultiplier = desiredHeight / swf.height;
+							swf.scaleX = widthMultiplier;
+							swf.scaleY = heightMultiplier;
 							multiplierInput.text = widthMultiplier.toPrecision(4);
+							scaleMatrix = new Matrix(widthMultiplier, 0, 0, heightMultiplier);
+							bmpData = new BitmapData((swf.loaderInfo.width+2)*widthMultiplier, (swf.loaderInfo.height+2)*heightMultiplier, true, 0x00FFFFFF);
 						}
-						scaleMatrix = new Matrix(widthMultiplier, 0, 0, heightMultiplier);
-						bmpData = new BitmapData((swf.loaderInfo.width+2)*widthMultiplier, (swf.loaderInfo.height+2)*heightMultiplier, true, 0x00FFFFFF);
 					}
 					bmpData.draw(swf, scaleMatrix);
 				}
@@ -555,7 +575,7 @@
 							<s:TextInput id="desiredHeightInput" enabled="false" focusIn="handleFocusIn(event)" width="50" />
 						</s:HGroup>
 						<s:HGroup paddingLeft="40" verticalAlign="middle">
-							<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" />
+							<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" change="handleChange(event)" />
 						</s:HGroup>
 						<s:HGroup verticalAlign="middle">
 							<s:Label fontSize="14" paddingTop="2" text="Add to end of Filename:" width="156" />
