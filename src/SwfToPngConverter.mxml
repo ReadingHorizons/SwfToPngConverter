@@ -9,6 +9,7 @@
 	
 	<fx:Script>
 		<![CDATA[
+			
 			import mx.collections.ArrayList;
 			import mx.controls.Alert;
 			import mx.events.FlexEvent;
@@ -79,6 +80,16 @@
 				{
 					fileSystemImport.browseForDirectory("Select the folder that contains the swf files that you want to convert.");
 				}
+			}
+			
+			private function clearDetails():void
+			{
+				fileName_txt.text = "";
+				swfWidth_txt.text = "";
+				swfHeight_txt.text = "";
+				swfFileSize_txt.text = "";
+				swfVersion_txt.text = "";
+				frameRate_txt.text = "";
 			}
 			
 			private function createFileSystems():void
@@ -321,6 +332,7 @@
 				var files:Array = event.clipboard.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array;
 				files.sortOn("url");
 				selectedFiles = new ArrayList(files);
+				clearDetails();
 				removePreviewSwf();
 				removeNonSwfFiles();
 				exportBtn.enabled = true;
@@ -363,6 +375,7 @@
 						if(fileSystemImport.isDirectory)
 						{
 							selectedFiles = new ArrayList(fileSystemImport.getDirectoryListing());
+							clearDetails();
 							removePreviewSwf();
 							removeNonSwfFiles();
 							exportBtn.enabled = true;
@@ -388,6 +401,7 @@
 				var files:Array = event.files;
 				files.sortOn("url");
 				selectedFiles = new ArrayList(files);
+				clearDetails();
 				removePreviewSwf();
 				removeNonSwfFiles();
 				exportBtn.enabled = true;
@@ -455,6 +469,13 @@
 				swfMovieClip = new UIMovieClip();
 				swfMovieClip.addChild(previewSwf);
 				swfContainer.addElement(swfMovieClip);
+				
+				fileName_txt.text = String(event.currentTarget.url).substring(event.currentTarget.url.lastIndexOf("/")+1);
+				swfWidth_txt.text = event.currentTarget.width.toString()+" px";
+				swfHeight_txt.text = event.currentTarget.height.toString()+" px";
+				swfFileSize_txt.text = Math.floor(event.currentTarget.bytes.bytesAvailable/1000).toString()+" KB";
+				swfVersion_txt.text = event.currentTarget.swfVersion.toString();
+				frameRate_txt.text = event.currentTarget.frameRate.toString();
 			}
 			
 			private function listLabel(value:Object):String
@@ -466,9 +487,11 @@
 			
 			private function loadSwf(swfFile:String):void
 			{
+				var urlRequest:URLRequest = new URLRequest(swfFile);
+				var loaderContext:LoaderContext = new LoaderContext(false);
 				swfPreviewLoader = new Loader();
 				swfPreviewLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, handleSwfPreviewLoadComplete);
-				swfPreviewLoader.load(new URLRequest(swfFile));
+				swfPreviewLoader.load(urlRequest, loaderContext);
 			}
 			
 			private function removeNonSwfFiles():void
@@ -545,48 +568,85 @@
 			</s:VGroup>
 			<s:Spacer width="2%" />
 			<s:VGroup width="48%" height="100%">
-				<s:Label fontSize="16" text="Swf Preview:" />
-				<s:BorderContainer width="100%" height="38%">
-					<s:Scroller id="swfScrollPane"  width="100%" height="100%">
-						<s:Group id="swfContainer" width="100%" height="100%"></s:Group>
-					</s:Scroller>
-				</s:BorderContainer>
-				<s:Label fontSize="16" text="Output Options:" />
-				<s:BorderContainer width="100%" height="62%">
-					<s:VGroup gap="10" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
-						<s:CheckBox id="adjustSizeCheckBox" fontSize="14" label="Adjust Output Size" change="handleChange(event)" />
-						<s:HGroup paddingLeft="20">
-							<s:RadioButton id="scaleRadio" groupName="outputSize" enabled="false" fontSize="14" label="Scale" selected="true" change="handleChange(event)" />
-						</s:HGroup>
-						<s:HGroup paddingLeft="40" verticalAlign="middle">
-							<s:Label id="multiplierLabel" color="#999999" fontSize="14" paddingTop="2" text="Multiplier:" width="100" />
-							<s:TextInput id="multiplierInput" enabled="false" text="1" width="50" />
-						</s:HGroup>
-						<s:Spacer height="12" />
-						<s:HGroup paddingLeft="20">
-							<s:RadioButton id="resizeRadio" groupName="outputSize" enabled="false" fontSize="14" label="Resize" change="handleChange(event)" />
-						</s:HGroup>
-						<s:HGroup paddingLeft="40" verticalAlign="middle">
-							<s:Label id="desiredWidthLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Width:" width="100" />
-							<s:TextInput id="desiredWidthInput" enabled="false" focusIn="handleFocusIn(event)" width="50" />
-						</s:HGroup>
-						<s:HGroup paddingLeft="40" verticalAlign="middle">
-							<s:Label id="desiredHeightLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Height:" width="100" />
-							<s:TextInput id="desiredHeightInput" enabled="false" focusIn="handleFocusIn(event)" width="50" />
-						</s:HGroup>
-						<s:HGroup paddingLeft="40" verticalAlign="middle">
-							<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" change="handleChange(event)" />
-						</s:HGroup>
-						<s:HGroup verticalAlign="middle">
-							<s:Label fontSize="14" paddingTop="2" text="Add to end of Filename:" width="156" />
-							<s:TextInput id="endOfFilenameInput" width="100" change="handleChange(event)" />
-						</s:HGroup>
-						<s:HGroup paddingLeft="20" verticalAlign="top">
-							<s:Label color="#222222" fontSize="14" text="Example: " />
-							<s:Label id="sampleEndOfFilename" color="#555555" fontStyle="italic" fontSize="14" text="sample.png" width="100%" />
-						</s:HGroup>
+				<s:HGroup width="100%" height="38%">
+					<s:VGroup width="50%" height="100%">
+						<s:Label fontSize="16" text="Swf Preview:" />
+						<s:BorderContainer width="100%" height="100%">
+							<s:Scroller id="swfScrollPane"  width="100%" height="100%">
+								<s:Group id="swfContainer" width="100%" height="100%"></s:Group>
+							</s:Scroller>
+						</s:BorderContainer>
 					</s:VGroup>
-				</s:BorderContainer>
+					<s:VGroup width="50%" height="100%">
+						<s:Label fontSize="16" text="Swf Details:" />
+						<s:BorderContainer width="100%">
+							<s:VGroup paddingTop="12" paddingRight="12" paddingBottom="12" paddingLeft="12" >
+								<s:HGroup>
+									<s:Label fontSize="14" text="Filename:" width="100" />
+									<s:Label id="fileName_txt" fontSize="14" text="" />
+								</s:HGroup>
+								<s:HGroup>
+									<s:Label fontSize="14" text="Swf Width:" width="100" />
+									<s:Label id="swfWidth_txt" fontSize="14" text="" />
+								</s:HGroup>
+								<s:HGroup>
+									<s:Label fontSize="14" text="Swf Height:" width="100" />
+									<s:Label id="swfHeight_txt" fontSize="14" text="" />
+								</s:HGroup>
+								<s:HGroup>
+									<s:Label fontSize="14" text="Swf File Size:" width="100" />
+									<s:Label id="swfFileSize_txt" fontSize="14" text="" />
+								</s:HGroup>
+								<s:HGroup>
+									<s:Label fontSize="14" text="Swf Version:" width="100" />
+									<s:Label id="swfVersion_txt" fontSize="14" text="" />
+								</s:HGroup>
+								<s:HGroup>
+									<s:Label fontSize="14" text="Frame rate:" width="100" />
+									<s:Label id="frameRate_txt" fontSize="14" text="" />
+								</s:HGroup>
+							</s:VGroup>
+						</s:BorderContainer>
+					</s:VGroup>
+				</s:HGroup>
+				<s:VGroup width="100%" height="62%">
+					<s:Label fontSize="16" text="Output Options:" />
+					<s:BorderContainer width="100%" height="100%">
+						<s:VGroup gap="10" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
+							<s:CheckBox id="adjustSizeCheckBox" fontSize="14" label="Adjust Output Size" change="handleChange(event)" />
+							<s:HGroup paddingLeft="20">
+								<s:RadioButton id="scaleRadio" groupName="outputSize" enabled="false" fontSize="14" label="Scale" selected="true" change="handleChange(event)" />
+							</s:HGroup>
+							<s:HGroup paddingLeft="40" verticalAlign="middle">
+								<s:Label id="multiplierLabel" color="#999999" fontSize="14" paddingTop="2" text="Multiplier:" width="100" />
+								<s:TextInput id="multiplierInput" enabled="false" text="1" width="50" />
+							</s:HGroup>
+							<s:Spacer height="12" />
+							<s:HGroup paddingLeft="20">
+								<s:RadioButton id="resizeRadio" groupName="outputSize" enabled="false" fontSize="14" label="Resize" change="handleChange(event)" />
+							</s:HGroup>
+							<s:HGroup paddingLeft="40" verticalAlign="middle">
+								<s:Label id="desiredWidthLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Width:" width="100" />
+								<s:TextInput id="desiredWidthInput" enabled="false" focusIn="handleFocusIn(event)" width="50" />
+							</s:HGroup>
+							<s:HGroup paddingLeft="40" verticalAlign="middle">
+								<s:Label id="desiredHeightLabel" color="#999999" fontSize="14" paddingTop="2" text="Desired Height:" width="100" />
+								<s:TextInput id="desiredHeightInput" enabled="false" focusIn="handleFocusIn(event)" width="50" />
+							</s:HGroup>
+							<s:HGroup paddingLeft="40" verticalAlign="middle">
+								<s:CheckBox id="constrainCheckBox" enabled="false" fontSize="14" label="Constrain Proportions:" selected="true" change="handleChange(event)" />
+							</s:HGroup>
+							<s:HGroup verticalAlign="middle">
+								<s:Label fontSize="14" paddingTop="2" text="Add to end of Filename:" width="156" />
+								<s:TextInput id="endOfFilenameInput" width="100" change="handleChange(event)" />
+							</s:HGroup>
+							<s:HGroup paddingLeft="20" verticalAlign="top">
+								<s:Label color="#222222" fontSize="14" text="Example: " />
+								<s:Label id="sampleEndOfFilename" color="#555555" fontStyle="italic" fontSize="14" text="sample.png" width="100%" />
+							</s:HGroup>
+						</s:VGroup>
+					</s:BorderContainer>
+				</s:VGroup>
 			</s:VGroup>
 		</s:HGroup>
 		<s:Spacer height="8" />
