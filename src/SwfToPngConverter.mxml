@@ -90,6 +90,7 @@
 				swfFileSize_txt.text = "";
 				swfVersion_txt.text = "";
 				frameRate_txt.text = "";
+				numFiles_txt.text = "";
 			}
 			
 			private function createFileSystems():void
@@ -335,6 +336,14 @@
 				clearDetails();
 				removePreviewSwf();
 				removeNonSwfFiles();
+				if(selectedFiles.length == 1)
+				{
+					numFiles_txt.text = selectedFiles.length.toString() + " file";
+				}
+				else
+				{
+					numFiles_txt.text = selectedFiles.length.toString() + " files";
+				}
 				exportBtn.enabled = true;
 				if(selectedFiles.length > 0)
 				{
@@ -649,6 +658,7 @@
 				</s:VGroup>
 			</s:VGroup>
 		</s:HGroup>
+		<s:Label id="numFiles_txt" fontSize="12" />
 		<s:Spacer height="8" />
 		<s:HGroup verticalAlign="middle" width="100%">
 			<s:Label fontSize="16" text="Export Destination:" />
